@@ -1,0 +1,29 @@
+#make sure you install packages for twitteR and ggplot2 = R2.14(unless your running older R then ggplot)
+#make sure you install packages for plyr
+
+require(twitteR)
+
+#Add your search hashtag e.g. #visualization.
+searchTerm='#visualization'
+
+#looking at 500 terms and there is a 1500 limit to the harvest
+randomTweets <- searchTwitter(searchTerm, n=500)
+
+#Setting dataframe twitteR helper function
+tw.df=twListToDF(randomTweets)
+
+require(plyr)
+
+#dataframe for screenName
+tw.dfx=ddply(tw.df, .var = "screenName", .fun = function(x) {return(subset(x, created %in% min(created),select=c(screenName,created)))})
+
+## sorting users dataframe
+tw.dfxa=arrange(tw.dfx,-desc(created))
+
+## sorting username dataframe
+tw.df$screenName=factor(tw.df$screenName, levels = tw.dfxa$screenName)
+
+require(ggplot2)
+
+#making image
+ggplot(tw.df)+geom_point(aes(x=created,y=screenName))
