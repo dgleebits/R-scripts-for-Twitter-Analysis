@@ -1,0 +1,43 @@
+#make sure you install packages twitteR, stringr, ggplot2, plyr
+
+require(twitteR)
+
+#here you will define the twitter user name e.g. dan gleebits is the user of twitter: @dgleebits
+username='dgleebits'
+
+#there are limits to harvesting around 3200 but unauthenticated is less for user timeline
+mht=userTimeline(username,n=3200)
+
+#setting dataframe for timeline
+tw.df=twListToDF(mht)
+
+require(stringr)
+
+trim <- function (x) sub('@','',x)
+
+#set dataframe for tweets
+tw.df$rt=sapply(tw.df$text,function(tweet) trim(str_match(tweet,"^RT (@[[:alnum:]_]*)")[2]))
+
+#set dataframe for retweets
+tw.df$rtt=sapply(tw.df$rt,function(rt) if (is.na(rt)) 'T' else 'RT')
+
+require(plyr)
+
+# sort to timeline
+tw.dfx=ddply(tw.dfs, .var = "replyToSN", .fun = function(x) {return(subset(x, created %in% min(created),select=c(replyToSN,created)))})
+
+# sort to created times
+tw.dfxa=arrange(tw.dfx,-desc(created))
+
+#sort for replies
+tw.dfs$replyToSN=factor(tw.dfs$replyToSN, levels = tw.dfxa$replyToSN)
+
+#create image
+ggplot(tw.dfs)+geom_point(aes(x=created,y=replyToSN))
+
+
+############################
+# creating colour plot
+############################
+ggplot()+geom_point(data=subset(tw.dfs,subset=(!is.na(replyToSN))),aes(x=created,y=replyToSN),col='red') + geom_point(data=subset(tw.dfs,subset=(!is.na(rt))),aes(x=created,y=rt),col='blue') + geom_point(data=subset(tw.dfs,subset=(is.na(replyToSN) & is.na(rt))),aes(x=created,y=screenName),col='green')
+
